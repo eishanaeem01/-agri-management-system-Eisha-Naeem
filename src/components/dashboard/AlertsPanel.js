@@ -1,21 +1,26 @@
-import EmptyState from '../common/EmptyState';
+import React from 'react';
 
-export default function AlertsPanel({ alerts }) {
+// Warnings built from Redux selectors: humidity, low stock, critical crops, cutting dates, tasks, inventory
+export default function AlertsPanel({ alerts, onDismiss, onClearAll }) {
   return (
-    <div className="card h-100 shadow-sm">
-      <div className="card-header d-flex justify-content-between align-items-center">
-        <span className="fw-semibold"><i className="bi bi-bell me-2 text-success" aria-hidden="true" />Alerts</span>
-        <span className={`badge rounded-pill ${alerts.length ? 'text-bg-danger' : 'text-bg-success'}`}>{alerts.length}</span>
+    <section className="panel h-100" aria-label="Alerts">
+      <div className="d-flex justify-content-between align-items-center">
+        <h2 className="panel-title">Alerts <span className="badge bg-danger ms-1">{alerts.length}</span></h2>
+        {alerts.length > 0 && <button className="btn btn-link btn-sm p-0" onClick={onClearAll}>Dismiss all</button>}
       </div>
-      <div className="card-body alerts-scroll">
-        {alerts.length === 0 && <EmptyState icon="bi-check-circle" title="All clear" message="No warnings right now." />}
-        {alerts.map((a) => (
-          <div key={a.id} className={`alert alert-${a.level} py-2 px-3 mb-2 d-flex gap-2 align-items-start`} role="alert">
-            <i className={`bi ${a.icon} mt-1`} aria-hidden="true" />
-            <div className="small"><div className="fw-semibold">{a.title}</div>{a.message}</div>
-          </div>
-        ))}
-      </div>
-    </div>
+      {alerts.length === 0 ? (
+        <p className="text-body-secondary small mb-0"><i className="bi bi-check-circle text-success me-2" />All clear. Nothing needs attention right now.</p>
+      ) : (
+        <div className="alerts-scroll">
+          {alerts.map((a) => (
+            <div key={a.id} className={`alert alert-${a.level} py-2 px-3 d-flex align-items-start gap-2 mb-2`} role="alert">
+              <i className={`bi ${a.icon} mt-1`} aria-hidden="true" />
+              <div className="flex-grow-1 small"><strong>{a.title}.</strong> {a.message}</div>
+              <button type="button" className="btn-close btn-sm" aria-label={`Dismiss ${a.title}`} onClick={() => onDismiss(a.id)} />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

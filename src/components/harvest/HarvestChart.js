@@ -1,34 +1,29 @@
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
-import EmptyState from '../common/EmptyState';
-import { useApp } from '../../context/AppContext';
-import { formatMonth, monthKey } from '../../utils/formatters';
-import { chartColors } from '../../utils/chartTheme';
+import React from 'react';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { monthLabel } from '../../utils/formatters';
 
-// Harvest (by cutting-date month) versus sales (by sale-date month).
-export default function HarvestChart({ crops, buyers }) {
-  const { darkMode } = useApp();
-  const col = chartColors(darkMode);
-  const months = [...new Set([...crops.map((c) => monthKey(c.cuttingDate)), ...buyers.map((b) => monthKey(b.date))])].sort();
-  const sum = (items, dateKey, qtyKey, m) => items.filter((i) => monthKey(i[dateKey]) === m).reduce((a, i) => a + (Number(i[qtyKey]) || 0), 0);
-
-  const data = {
-    labels: months.map(formatMonth),
-    datasets: [
-      { label: 'Harvest (kg)', data: months.map((m) => sum(crops, 'cuttingDate', 'harvestQty', m)), backgroundColor: col.green, borderRadius: 4 },
-      { label: 'Sold (kg)', data: months.map((m) => sum(buyers, 'date', 'quantity', m)), backgroundColor: col.amber, borderRadius: 4 },
-    ],
-  };
-  const options = {
-    maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: col.text } } },
-    scales: { x: { ticks: { color: col.text }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: col.text }, grid: { color: col.grid } } },
-  };
-
+// Harvest vs sales (bars) and orders over time (line), grouped by month
+export default function HarvestChart({ series }) {
+  const data = series.map((s) => ({ ...s, label: monthLabel(s.month) }));
   return (
-    <div className="card h-100 shadow-sm">
-      <div className="card-header fw-semibold"><i className="bi bi-bar-chart me-2 text-success" aria-hidden="true" />Harvest vs sales</div>
-      <div className="card-body">{months.length === 0 ? <EmptyState icon="bi-bar-chart" title="No data to chart" /> : <div className="chart-box"><Bar data={data} options={options} /></div>}</div>
-    </div>
+    <section className="panel h-100" aria-label="Harvest versus sales chart">
+      <h2 className="panel-title">Harvest vs sales and orders (kg per month)</h2>
+      {data.length === 0 ? (
+        <p className="text-body-secondary small">No data to chart yet.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="label" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="harvest" name="Harvest" fill="#2f8f4e" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="sold" name="Sold" fill="#d9a441" radius={[4, 4, 0, 0]} />
+            <Line type="monotone" dataKey="orders" name="Orders" stroke="#3a6f8f" strokeWidth={2} dot />
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
+    </section>
   );
 }

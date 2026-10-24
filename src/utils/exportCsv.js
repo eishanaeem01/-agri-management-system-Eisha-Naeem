@@ -1,24 +1,25 @@
-// Quote every cell, escape quotes, and neutralise spreadsheet formula injection.
-const cell = (v) => {
-  let s = v === null || v === undefined ? '' : String(v);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return `"${s.replace(/"/g, '""')}"`;
+const escapeCell = (v) => {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export function toCsv(rows, columns) {
-  const header = columns.map((c) => cell(c.label)).join(',');
-  const body = rows.map((r) => columns.map((c) => cell(typeof c.value === 'function' ? c.value(r) : r[c.key])).join(','));
-  return [header, ...body].join('\r\n');
-}
+export const toCsv = (rows) => {
+  if (!rows.length) return '';
+  const cols = Object.keys(rows[0]);
+  return [cols.join(','), ...rows.map((r) => cols.map((c) => escapeCell(r[c])).join(','))].join('\n');
+};
 
-export function exportCsv(rows, columns, filename) {
-  const blob = new Blob(['\ufeff' + toCsv(rows, columns)], { type: 'text/csv;charset=utf-8;' });
+export const downloadFile = (filename, content, type = 'text/csv;charset=utf-8;') => {
+  const blob = new Blob(['\ufeff' + content], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  a.remove();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
+};
+
+// Convert orders, buyers, expenses or any list of flat objects to a CSV download
+export const exportCsv = (filename, rows) => downloadFile(filename, toCsv(rows));

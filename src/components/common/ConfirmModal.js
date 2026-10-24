@@ -1,20 +1,21 @@
-import Modal from './Modal';
+import React from 'react';
+import ModalShell from './ModalShell';
 
-export default function ConfirmModal({ show, title = 'Please confirm', message, confirmText = 'Delete', variant = 'danger', onConfirm, onCancel }) {
+// Asks for confirmation before deleting any record
+export default function ConfirmModal({ show, title = 'Delete record?', message, confirmText = 'Delete', onConfirm, onCancel }) {
   return (
-    <Modal
+    <ModalShell
       show={show}
       title={title}
-      size="sm"
       onClose={onCancel}
       footer={
         <>
-          <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>Cancel</button>
-          <button type="button" className={`btn btn-${variant}`} onClick={onConfirm}>{confirmText}</button>
+          <button className="btn btn-outline-secondary" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-danger" onClick={onConfirm}>{confirmText}</button>
         </>
       }
     >
-      <p className="mb-0">{message}</p>
-    </Modal>
+      <p className="mb-0">{message || 'This action cannot be undone.'}</p>
+    </ModalShell>
   );
 }

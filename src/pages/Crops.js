@@ -1,42 +1,45 @@
-import { useState } from 'react';
-import PageHeader from '../components/common/PageHeader';
-import ConfirmModal from '../components/common/ConfirmModal';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import CropForm from '../components/crops/CropForm';
 import CropTable from '../components/crops/CropTable';
-import { useApp } from '../context/AppContext';
+import ModalShell from '../components/common/ModalShell';
+import ConfirmModal from '../components/common/ConfirmModal';
+import usePermissions from '../hooks/usePermissions';
+import useToast from '../hooks/useToast';
+import { addCrop, updateCrop, removeCrop } from '../store/actions/cropActions';
 
 export default function Crops() {
-  const { crops, stock, addCrop, updateCrop, deleteCrop } = useApp();
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [toDelete, setToDelete] = useState(null);
-
-  const openAdd = () => { setEditing(null); setFormOpen(true); };
-  const openEdit = (crop) => { setEditing(crop); setFormOpen(true); };
-  const close = () => setFormOpen(false);
+  const dispatch = useDispatch();
+  const toast = useToast();
+  const { canAdd, canEdit, canDelete } = usePermissions();
+  const crops = useSelector((s) => s.crops);
+  const [editing, setEditing] = useState(null); // null = closed, {} = new, crop = edit
+  const [deleting, setDeleting] = useState(null);
 
   const save = (data) => {
-    if (editing) updateCrop(editing.id, data);
-    else addCrop(data);
-    close();
+    if (data.id) { dispatch(updateCrop(data)); toast.success(`${data.name} updated`); }
+    else { dispatch(addCrop(data)); toast.success(`${data.name} added`); }
+    setEditing(null);
+  };
+  const confirmDelete = () => {
+    dispatch(removeCrop(deleting.id));
+    toast.success(`${deleting.name} deleted`);
+    setDeleting(null);
   };
 
   return (
     <>
-      <PageHeader title="Crops" subtitle="Add, edit and track every crop in your fields.">
-        <button type="button" className="btn btn-success" onClick={openAdd}><i className="bi bi-plus-lg me-1" />Add crop</button>
-      </PageHeader>
-
-      <CropTable crops={crops} onEdit={openEdit} onDelete={setToDelete} />
-
-      <CropForm show={formOpen} initial={editing} minQty={editing ? stock[editing.id]?.sold || 0 : 0} onSave={save} onClose={close} />
-      <ConfirmModal
-        show={!!toDelete}
-        title="Delete crop"
-        message={toDelete ? `Delete "${toDelete.name}" (${toDelete.field})? Its orders and buyer records will be deleted too. This cannot be undone.` : ''}
-        onConfirm={() => { deleteCrop(toDelete.id); setToDelete(null); }}
-        onCancel={() => setToDelete(null)}
-      />
+      <div className="page-head d-flex flex-wrap justify-content-between align-items-end gap-2">
+        <div><h1>Crops</h1><p>Track every crop, its health score and cutting date.</p></div>
+        {canAdd && <button className="btn btn-success" onClick={() => setEditing({})}><i className="bi bi-plus-lg me-1" />Add crop</button>}
+      </div>
+      <div className="panel">
+        <CropTable crops={crops} onEdit={setEditing} onDelete={setDeleting} canEdit={canEdit} canDelete={canDelete} />
+      </div>
+      <ModalShell show={Boolean(editing)} title={editing?.id ? 'Edit crop' : 'Add crop'} onClose={() => setEditing(null)} size="modal-lg">
+        {editing && <CropForm initial={editing.id ? editing : null} onSubmit={save} onCancel={() => setEditing(null)} />}
+      </ModalShell>
+      <ConfirmModal show={Boolean(deleting)} title="Delete crop?" message={`Delete ${deleting?.name} (${deleting?.field})? Orders, tasks and expenses linked to it will show "Deleted crop".`} onConfirm={confirmDelete} onCancel={() => setDeleting(null)} />
     </>
   );
 }

@@ -1,22 +1,21 @@
+import React from 'react';
 import { formatCnic } from '../../utils/formatters';
 
-// Digits only; dashes are inserted automatically -> 12345-1234567-1
-export default function CnicInput({ id = 'cnic', value, onChange, onBlur, error }) {
+// Auto-formats to 12345-1234567-1 while typing
+export default function CnicInput({ value, onChange, error, id = 'buyer-cnic' }) {
   return (
     <>
       <input
         id={id}
-        type="text"
+        className={`form-control ${error ? 'is-invalid' : ''}`}
         inputMode="numeric"
         autoComplete="off"
-        maxLength={15}
         placeholder="12345-1234567-1"
-        className={`form-control ${error ? 'is-invalid' : ''}`}
+        maxLength={15}
         value={value}
         onChange={(e) => onChange(formatCnic(e.target.value))}
-        onBlur={onBlur}
       />
-      {error && <div className="invalid-feedback">{error}</div>}
+      <div className="invalid-feedback">{error}</div>
     </>
   );
 }

@@ -1,14 +1,13 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
-import EmptyState from '../components/common/EmptyState';
 
 export default function NotFound() {
   return (
-    <div className="card shadow-sm">
-      <div className="card-body py-5">
-        <EmptyState icon="bi-compass" title="Page not found" message="The page you are looking for does not exist.">
-          <Link to="/" className="btn btn-success">Back to dashboard</Link>
-        </EmptyState>
-      </div>
+    <div className="d-flex flex-column align-items-center justify-content-center text-center min-vh-100 p-4">
+      <i className="bi bi-signpost-split display-3 text-success" />
+      <h1 className="mt-3">Page not found</h1>
+      <p className="text-body-secondary">This page does not exist or was moved.</p>
+      <Link to="/" className="btn btn-success">Go to dashboard</Link>
     </div>
   );
 }

@@ -1,26 +1,20 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import useDebounce from '../../hooks/useDebounce';
 
-// Debounced search box: calls onSearch(text) 300 ms after the user stops typing.
-export default function SearchBar({ onSearch, placeholder = 'Search...', delay = 300 }) {
+// Search input with debounce - calls onChange 300ms after typing stops
+export default function SearchBar({ onChange, placeholder = 'Search...', className = '' }) {
   const [text, setText] = useState('');
-  const debounced = useDebounce(text, delay);
-
+  const debounced = useDebounce(text, 300);
+  const cb = useRef(onChange);
+  cb.current = onChange;
   useEffect(() => {
-    onSearch(debounced);
-  }, [debounced, onSearch]);
+    cb.current(debounced);
+  }, [debounced]);
 
   return (
-    <div className="input-group search-bar">
+    <div className={`input-group ${className}`}>
       <span className="input-group-text"><i className="bi bi-search" aria-hidden="true" /></span>
-      <input
-        type="search"
-        className="form-control"
-        placeholder={placeholder}
-        aria-label={placeholder}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
+      <input type="search" className="form-control" placeholder={placeholder} aria-label={placeholder} value={text} onChange={(e) => setText(e.target.value)} />
     </div>
   );
 }

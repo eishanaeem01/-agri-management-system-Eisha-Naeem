@@ -1,73 +1,91 @@
-import { useEffect, useState } from 'react';
-import Modal from '../common/Modal';
+import React, { useState } from 'react';
+import { required, positiveNumber } from '../../utils/validators';
+import { statusFromScore, todayStr } from '../../utils/formatters';
 import StatusBadge from '../common/StatusBadge';
-import { validateCrop, hasErrors } from '../../utils/validators';
-import { healthStatus, todayISO } from '../../utils/formatters';
 
-const EMPTY = { name: '', field: '', plantingDate: '', cuttingDate: '', healthScore: '', harvestQty: '' };
+const EMPTY = { name: '', field: '', plantingDate: todayStr(), cuttingDate: '', healthScore: 80, harvestQty: '', pricePerKg: '' };
 
-// Add / edit a crop inside a modal. `minQty` is the amount already sold (expected quantity can't go below it).
-export default function CropForm({ show, initial, minQty = 0, onSave, onClose }) {
-  const [v, setV] = useState(EMPTY);
-  const [submitted, setSubmitted] = useState(false);
+// Add or edit a crop
+export default function CropForm({ initial, onSubmit, onCancel }) {
+  const [f, setF] = useState(initial || EMPTY);
+  const [errors, setErrors] = useState({});
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  useEffect(() => {
-    if (show) {
-      setV(initial ? { ...EMPTY, ...initial } : { ...EMPTY, plantingDate: todayISO() });
-      setSubmitted(false);
-    }
-  }, [show, initial]);
+  const validate = () => {
+    const e = {};
+    const add = (k, msg) => msg && (e[k] = msg);
+    add('name', required(f.name, 'Crop name'));
+    add('field', required(f.field, 'Field name'));
+    add('plantingDate', required(f.plantingDate, 'Planting date'));
+    add('cuttingDate', required(f.cuttingDate, 'Cutting date'));
+    if (!e.cuttingDate && !e.plantingDate && f.cuttingDate < f.plantingDate) e.cuttingDate = 'Cutting date cannot be before planting date';
+    if (f.healthScore === '' || Number(f.healthScore) < 0 || Number(f.healthScore) > 100) e.healthScore = 'Health score must be between 0 and 100';
+    add('harvestQty', positiveNumber(f.harvestQty, 'Expected quantity'));
+    if (f.pricePerKg === '' || Number(f.pricePerKg) < 0) e.pricePerKg = 'Price per kg is required';
+    return e;
+  };
 
-  const errors = validateCrop(v, minQty);
-  const set = (k) => (e) => setV((p) => ({ ...p, [k]: e.target.value }));
-  const err = (k) => submitted && errors[k];
-
-  const submit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-    if (hasErrors(errors)) return;
-    onSave({
-      name: v.name.trim(),
-      field: v.field.trim(),
-      plantingDate: v.plantingDate,
-      cuttingDate: v.cuttingDate,
-      healthScore: Number(v.healthScore),
-      harvestQty: Number(v.harvestQty),
+  const submit = (ev) => {
+    ev.preventDefault();
+    const err = validate();
+    setErrors(err);
+    if (Object.keys(err).length) return;
+    onSubmit({
+      ...f,
+      name: f.name.trim(),
+      field: f.field.trim(),
+      healthScore: Number(f.healthScore),
+      status: statusFromScore(f.healthScore),
+      harvestQty: Number(f.harvestQty),
+      pricePerKg: Number(f.pricePerKg),
     });
   };
 
-  const input = (k, label, type = 'text', extra = {}) => (
-    <div className="col-md-6">
-      <label htmlFor={`crop-${k}`} className="form-label">{label}</label>
-      <input id={`crop-${k}`} type={type} className={`form-control ${err(k) ? 'is-invalid' : ''}`} value={v[k]} onChange={set(k)} {...extra} />
-      {err(k) && <div className="invalid-feedback">{errors[k]}</div>}
-    </div>
-  );
-
+  const cls = (k) => `form-control ${errors[k] ? 'is-invalid' : ''}`;
   return (
-    <Modal
-      show={show}
-      title={initial ? 'Edit crop' : 'Add crop'}
-      onClose={onClose}
-      size="lg"
-      footer={
-        <>
-          <button type="button" className="btn btn-outline-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" form="crop-form" className="btn btn-success">{initial ? 'Save changes' : 'Add crop'}</button>
-        </>
-      }
-    >
-      <form id="crop-form" className="row g-3" onSubmit={submit} noValidate>
-        {input('name', 'Crop name', 'text', { placeholder: 'e.g. Wheat', maxLength: 40 })}
-        {input('field', 'Field name', 'text', { placeholder: 'e.g. North Field A', maxLength: 40 })}
-        {input('plantingDate', 'Planting date', 'date')}
-        {input('cuttingDate', 'Cutting (harvest) date', 'date')}
-        {input('healthScore', 'Health score (0 to 100)', 'number', { min: 0, max: 100, placeholder: '0 - 100' })}
-        {input('harvestQty', 'Expected harvest quantity (kg)', 'number', { min: 1, placeholder: 'e.g. 2500' })}
-        {v.healthScore !== '' && !errors.healthScore && (
-          <div className="col-12 small">Health status will be set to <StatusBadge status={healthStatus(Number(v.healthScore))} /></div>
-        )}
-      </form>
-    </Modal>
+    <form onSubmit={submit} noValidate>
+      <div className="row g-3">
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="crop-name">Crop name</label>
+          <input id="crop-name" className={cls('name')} value={f.name} onChange={set('name')} placeholder="e.g. Wheat" />
+          <div className="invalid-feedback">{errors.name}</div>
+        </div>
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="crop-field">Field</label>
+          <input id="crop-field" className={cls('field')} value={f.field} onChange={set('field')} placeholder="e.g. Field A" />
+          <div className="invalid-feedback">{errors.field}</div>
+        </div>
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="crop-plant">Planting date</label>
+          <input id="crop-plant" type="date" className={cls('plantingDate')} value={f.plantingDate} onChange={set('plantingDate')} />
+          <div className="invalid-feedback">{errors.plantingDate}</div>
+        </div>
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="crop-cut">Cutting date</label>
+          <input id="crop-cut" type="date" className={cls('cuttingDate')} value={f.cuttingDate} onChange={set('cuttingDate')} />
+          <div className="invalid-feedback">{errors.cuttingDate}</div>
+        </div>
+        <div className="col-md-4">
+          <label className="form-label" htmlFor="crop-score">Health score (0-100)</label>
+          <input id="crop-score" type="number" min="0" max="100" className={cls('healthScore')} value={f.healthScore} onChange={set('healthScore')} />
+          <div className="invalid-feedback">{errors.healthScore}</div>
+          {f.healthScore !== '' && !errors.healthScore && <div className="mt-1"><StatusBadge status={statusFromScore(f.healthScore)} /></div>}
+        </div>
+        <div className="col-md-4">
+          <label className="form-label" htmlFor="crop-qty">Expected quantity (kg)</label>
+          <input id="crop-qty" type="number" min="1" className={cls('harvestQty')} value={f.harvestQty} onChange={set('harvestQty')} />
+          <div className="invalid-feedback">{errors.harvestQty}</div>
+        </div>
+        <div className="col-md-4">
+          <label className="form-label" htmlFor="crop-price">Price per kg (Rs)</label>
+          <input id="crop-price" type="number" min="0" className={cls('pricePerKg')} value={f.pricePerKg} onChange={set('pricePerKg')} />
+          <div className="invalid-feedback">{errors.pricePerKg}</div>
+        </div>
+      </div>
+      <div className="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="btn btn-success">{initial ? 'Save changes' : 'Add crop'}</button>
+      </div>
+    </form>
   );
 }

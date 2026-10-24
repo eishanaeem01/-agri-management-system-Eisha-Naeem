@@ -1,35 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchWeather } from '../services/weatherApi';
+import { useCallback, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchWeather } from '../store/thunks/fetchWeather';
+import { WEATHER_REFRESH_MS } from '../api/weatherApi';
 
-export const WEATHER_REFRESH_MS = 10 * 60 * 1000; // refresh every 10 minutes
-
-// Fetches live weather, refreshes automatically, and returns { data, loading, error, lastUpdated, refresh }.
-export default function useWeather(city, refreshMs = WEATHER_REFRESH_MS) {
-  const [state, setState] = useState({ data: null, loading: true, error: null, lastUpdated: null });
-  const controller = useRef(null);
-
-  const load = useCallback(async () => {
-    controller.current?.abort();
-    const ctrl = new AbortController();
-    controller.current = ctrl;
-    setState((s) => ({ ...s, loading: true, error: null, data: s.data && s.data.city === city.name ? s.data : null }));
-    try {
-      const data = await fetchWeather(city, ctrl.signal);
-      setState({ data, loading: false, error: null, lastUpdated: new Date() });
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      setState((s) => ({ ...s, loading: false, error: err.message || 'Failed to load weather data.' }));
-    }
-  }, [city]);
+// Dispatches the weather thunk, optionally auto-refreshes, and returns data / loading / error from the store.
+export default function useWeather({ autoRefresh = true } = {}) {
+  const dispatch = useDispatch();
+  const { data, status, error, lastUpdated } = useSelector((s) => s.weather);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, refreshMs);
-    return () => {
-      clearInterval(id);
-      controller.current?.abort();
-    };
-  }, [load, refreshMs]);
+    if (!autoRefresh) return undefined;
+    dispatch(fetchWeather());
+    const timer = setInterval(() => dispatch(fetchWeather()), WEATHER_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [dispatch, autoRefresh]);
 
-  return { ...state, refresh: load };
+  const refresh = useCallback(() => dispatch(fetchWeather()), [dispatch]);
+  return { data, status, error, lastUpdated, loading: status === 'loading', refresh };
 }

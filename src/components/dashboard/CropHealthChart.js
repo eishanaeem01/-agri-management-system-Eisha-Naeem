@@ -1,28 +1,27 @@
-import { Doughnut } from 'react-chartjs-2';
-import 'chart.js/auto';
-import EmptyState from '../common/EmptyState';
-import { useApp } from '../../context/AppContext';
-import { healthStatus } from '../../utils/formatters';
-import { chartColors } from '../../utils/chartTheme';
+import React from 'react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function CropHealthChart({ crops }) {
-  const { darkMode } = useApp();
-  const col = chartColors(darkMode);
-  const counts = { Healthy: 0, 'Needs Attention': 0, Critical: 0 };
-  crops.forEach((c) => (counts[healthStatus(c.healthScore)] += 1));
+const COLORS = { Healthy: '#2f8f4e', 'Needs Attention': '#e0a800', Critical: '#d6453d' };
 
-  const data = {
-    labels: Object.keys(counts),
-    datasets: [{ data: Object.values(counts), backgroundColor: [col.green, col.amber, col.red], borderWidth: 0 }],
-  };
-  const options = { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: col.text } } } };
-
+// Doughnut chart of Healthy vs Needs Attention vs Critical
+export default function CropHealthChart({ counts }) {
+  const data = Object.entries(counts).map(([name, value]) => ({ name, value })).filter((d) => d.value > 0);
   return (
-    <div className="card h-100 shadow-sm">
-      <div className="card-header fw-semibold"><i className="bi bi-pie-chart me-2 text-success" aria-hidden="true" />Health distribution</div>
-      <div className="card-body">
-        {crops.length === 0 ? <EmptyState icon="bi-pie-chart" title="No data to chart" /> : <div className="chart-box"><Doughnut data={data} options={options} /></div>}
-      </div>
-    </div>
+    <section className="panel h-100" aria-label="Crop health distribution">
+      <h2 className="panel-title">Health distribution</h2>
+      {data.length === 0 ? (
+        <p className="text-body-secondary small">No crop data to chart.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie data={data} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={3}>
+              {data.map((d) => <Cell key={d.name} fill={COLORS[d.name]} />)}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </section>
   );
 }

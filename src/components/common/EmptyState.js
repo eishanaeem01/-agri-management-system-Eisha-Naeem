@@ -1,10 +1,12 @@
+import React from 'react';
+
 export default function EmptyState({ icon = 'bi-inbox', title = 'Nothing here yet', message, children }) {
   return (
-    <div className="text-center text-body-secondary py-4 px-3">
-      <i className={`bi ${icon} display-6 d-block mb-2`} aria-hidden="true" />
-      <div className="fw-semibold">{title}</div>
-      {message && <div className="small">{message}</div>}
-      {children && <div className="mt-3">{children}</div>}
+    <div className="empty-state text-center py-5 px-3">
+      <i className={`bi ${icon} display-5 text-body-tertiary`} aria-hidden="true" />
+      <h3 className="h6 mt-3 mb-1">{title}</h3>
+      {message && <p className="text-body-secondary small mb-3">{message}</p>}
+      {children}
     </div>
   );
 }

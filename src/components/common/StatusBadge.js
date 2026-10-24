@@ -1,18 +1,20 @@
-const VARIANTS = {
-  Healthy: 'success',
-  'Needs Attention': 'warning',
-  Critical: 'danger',
-  Pending: 'warning',
-  Delivered: 'success',
-  Cancelled: 'secondary',
-  Overdue: 'danger',
-  'Due Soon': 'warning',
-  Upcoming: 'info',
-  Low: 'warning',
-  Optimal: 'success',
-  High: 'danger',
+import React from 'react';
+
+const STYLES = {
+  Healthy: 'bg-success',
+  'Needs Attention': 'bg-warning text-dark',
+  Critical: 'bg-danger',
+  Pending: 'bg-warning text-dark',
+  Delivered: 'bg-primary',
+  Done: 'bg-success',
+  Overdue: 'bg-danger',
+  Low: 'bg-info text-dark',
+  Optimal: 'bg-success',
+  High: 'bg-danger',
+  Admin: 'bg-dark',
+  Manager: 'bg-secondary',
 };
 
-export default function StatusBadge({ status, variant }) {
-  return <span className={`badge rounded-pill text-bg-${variant || VARIANTS[status] || 'secondary'}`}>{status}</span>;
+export default function StatusBadge({ status, className = '' }) {
+  return <span className={`badge rounded-pill ${STYLES[status] || 'bg-secondary'} ${className}`}>{status}</span>;
 }

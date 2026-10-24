@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Components are written as .js files (as required by the brief), so JSX is enabled for .js.
+// Source files use the .js extension (App.js, index.js) but contain JSX.
 export default defineConfig({
-  base: './',
   plugins: [react({ include: /\.(js|jsx)$/ })],
   esbuild: { loader: 'jsx', include: /src\/.*\.jsx?$/, exclude: [] },
   optimizeDeps: { esbuildOptions: { loader: { '.js': 'jsx' } } },
-  test: { environment: 'node', include: ['src/tests/**/*.test.js'] },
+  test: { environment: 'node', include: ['src/**/*.test.js'] },
 });
